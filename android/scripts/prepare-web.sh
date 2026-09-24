@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ANDROID_ASSETS="$ROOT/android/app/src/main/assets/www"
 WEB_PACKAGE="$ROOT/../vscode-web"
 
 cd "$ROOT"
 
 echo "Building the Code - OSS web bundle..."
-export NODE_OPTIONS="\${NODE_OPTIONS:---max-old-space-size=8192}"
+export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=8192}"
 npm run gulp vscode-web-min
 
 if [[ ! -d "$WEB_PACKAGE/out" ]]; then
