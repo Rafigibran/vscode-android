@@ -1,4 +1,4 @@
-package com.rafigibran.vscodeandroid;
+package com.wizardnative.wizardcode;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
