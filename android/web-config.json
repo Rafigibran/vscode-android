@@ -1,0 +1,7 @@
+{
+  "callbackRoute": "/callback",
+  "enableTelemetry": false,
+  "settingsSyncOptions": {
+    "enabled": false
+  }
+}
