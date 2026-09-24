@@ -37,6 +37,16 @@ jobs:
       - name: Install web runtime dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund --prefix remote/web
 
+      - name: Install web extension dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' lockfile; do
+            extension_dir="${lockfile%/package-lock.json}"
+            echo "Installing dependencies in ${extension_dir}"
+            npm ci --ignore-scripts --no-audit --no-fund --prefix "${extension_dir}"
+          done < <(find extensions -mindepth 2 -name package-lock.json -print0)
+
       - name: Build VS Code web bundle
         env:
           NODE_OPTIONS: --max-old-space-size=8192
