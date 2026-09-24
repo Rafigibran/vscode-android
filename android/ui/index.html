@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#111318">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>WizardCode</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./monaco/vs/loader.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button class="icon-button" id="menuBtn" aria-label="Open explorer">
+        <span class="icon icon-menu"></span>
+      </button>
+      <div class="brand">
+        <div class="brand-mark">W</div>
+        <div class="brand-text">
+          <strong>WizardCode</strong>
+          <span id="projectLabel">Mobile workspace</span>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="searchBtn" aria-label="Search">
+          <span class="icon icon-search"></span>
+        </button>
+        <button class="icon-button" id="saveBtnTop" aria-label="Save">
+          <span class="icon icon-save"></span>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="workspace">
+        <div class="welcome" id="welcome">
+          <div class="welcome-glow"></div>
+          <div class="welcome-card">
+            <div class="welcome-logo">W</div>
+            <div class="eyebrow">ANDROID CODE EDITOR</div>
+            <h1>Code anywhere.</h1>
+            <p>WizardCode is a mobile-first editor built around the VS Code-style workflow you are familiar with.</p>
+            <div class="welcome-actions">
+              <button class="primary-button" id="newFileBtn">
+                <span class="icon icon-plus"></span>
+                New file
+              </button>
+              <button class="secondary-button" id="openFileBtn">
+                <span class="icon icon-folder"></span>
+                Open file
+              </button>
+            </div>
+            <div class="welcome-hints">
+              <div class="hint">
+                <span class="hint-key">CTRL</span>
+                <span>Use a hardware keyboard for shortcuts</span>
+              </div>
+              <div class="hint">
+                <span class="hint-key">UTF-8</span>
+                <span>Files are saved through Android storage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-shell hidden" id="editorShell">
+          <div class="tabbar">
+            <div class="tab active">
+              <span class="tab-dot"></span>
+              <span id="tabName">untitled.js</span>
+              <button class="tab-close" id="tabClose" aria-label="Close">×</button>
+            </div>
+            <button class="tab-add" id="tabAdd" aria-label="New file">+</button>
+          </div>
+          <div id="editor"></div>
+        </div>
+      </section>
+
+      <section class="statusbar">
+        <span id="statusMessage">Ready</span>
+        <div class="status-right">
+          <span id="cursorPosition">Ln 1, Col 1</span>
+          <span id="languageLabel">Plain Text</span>
+          <span>UTF-8</span>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" id="navExplorer">
+        <span class="icon icon-layout"></span>
+        <span>Explorer</span>
+      </button>
+      <button class="nav-item" id="navSearch">
+        <span class="icon icon-search"></span>
+        <span>Search</span>
+      </button>
+      <button class="nav-new" id="navNew" aria-label="New file">
+        <span class="icon icon-plus"></span>
+      </button>
+      <button class="nav-item" id="navSave">
+        <span class="icon icon-save"></span>
+        <span>Save</span>
+      </button>
+      <button class="nav-item" id="navMore">
+        <span class="icon icon-more"></span>
+        <span>More</span>
+      </button>
+    </nav>
+
+    <aside class="drawer" id="drawer">
+      <div class="drawer-head">
+        <div>
+          <div class="drawer-title">EXPLORER</div>
+          <div class="drawer-subtitle">Workspace files</div>
+        </div>
+        <button class="icon-button" id="drawerClose" aria-label="Close explorer">
+          <span class="icon icon-close"></span>
+        </button>
+      </div>
+      <div class="drawer-list">
+        <button class="file-row" id="drawerNew">
+          <span class="file-icon">+</span>
+          <span>New file</span>
+        </button>
+        <button class="file-row" id="drawerOpen">
+          <span class="file-icon folder-icon"></span>
+          <span>Open from device</span>
+        </button>
+        <div class="drawer-divider"></div>
+        <div class="file-row current">
+          <span class="file-icon" id="drawerFileIcon">JS</span>
+          <span id="drawerFileName">untitled.js</span>
+        </div>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <div class="modal hidden" id="newFileModal">
+      <div class="modal-card">
+        <div class="modal-title">Create a new file</div>
+        <div class="modal-subtitle">Choose a filename and start coding.</div>
+        <input id="newFileName" class="modal-input" autocomplete="off" autocapitalize="none" spellcheck="false" value="main.js">
+        <div class="modal-actions">
+          <button class="secondary-button compact" id="cancelNew">Cancel</button>
+          <button class="primary-button compact" id="confirmNew">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</body>
+</html>
