@@ -1,4 +1,4 @@
-# Code - OSS Android
+# WizardCode Android
 
 This directory contains the Android shell for the Code - OSS web workbench in this repository.
 
