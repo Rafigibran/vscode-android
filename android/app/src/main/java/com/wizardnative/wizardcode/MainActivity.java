@@ -1,34 +1,41 @@
 package com.wizardnative.wizardcode;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Bitmap;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.webkit.ConsoleMessage;
-import android.webkit.CookieManager;
-import android.webkit.DownloadListener;
-import android.webkit.ValueCallback;
-import android.webkit.WebChromeClient;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.webkit.WebViewAssetLoader;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
 public final class MainActivity extends Activity {
 
-    private static final int FILE_CHOOSER_REQUEST = 4101;
+    private static final int OPEN_FILE_REQUEST = 5101;
+    private static final int SAVE_FILE_REQUEST = 5102;
 
     private WebView webView;
-    private ValueCallback<Uri[]> pendingFileCallback;
     private WebViewAssetLoader assetLoader;
+    private String pendingSaveName = "main.js";
+    private String pendingSaveContent = "";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -37,17 +44,23 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         setContentView(webView);
 
-        configureWebView();
-        applySystemUi();
-        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void configureWebView() {
         assetLoader = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
 
+        configureWindow();
+        configureWebView();
+        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
+        webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
+    }
+
+    private void configureWindow() {
+        getWindow().setStatusBarColor(android.graphics.Color.rgb(17, 19, 24));
+        getWindow().setNavigationBarColor(android.graphics.Color.rgb(13, 15, 19));
+        getWindow().getDecorView().setSystemUiVisibility(0);
+    }
+
+    private void configureWebView() {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -57,129 +70,185 @@ public final class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-        settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         settings.setTextZoom(100);
-        settings.setUserAgentString(settings.getUserAgentString()
-                + " VSCodeAndroid/1.0 CodeOSS/Android");
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setUserAgentString(settings.getUserAgentString() + " WizardCode/1.0");
 
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
-
+        webView.setBackgroundColor(android.graphics.Color.rgb(13, 15, 19));
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        webView.setVerticalScrollBarEnabled(false);
-        webView.setHorizontalScrollBarEnabled(false);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(
-                    WebView view, WebResourceRequest request) {
+                    WebView view,
+                    WebResourceRequest request) {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(
-                    WebView view, WebResourceRequest request) {
+                    WebView view,
+                    WebResourceRequest request) {
                 String scheme = request.getUrl().getScheme();
                 if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
                     return false;
                 }
+
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl()));
                 } catch (ActivityNotFoundException ignored) {
-                    // No external handler available.
                 }
                 return true;
             }
-
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                applySystemUi();
-            }
-
-            @Override
-            public boolean onRenderProcessGone(
-                    WebView view, android.webkit.RenderProcessGoneDetail detail) {
-                view.destroy();
-                recreate();
-                return true;
-            }
         });
-
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-                return super.onConsoleMessage(consoleMessage);
-            }
-
-            @Override
-            public boolean onShowFileChooser(
-                    WebView webView,
-                    ValueCallback<Uri[]> filePathCallback,
-                    FileChooserParams fileChooserParams) {
-                if (pendingFileCallback != null) {
-                    pendingFileCallback.onReceiveValue(null);
-                }
-
-                pendingFileCallback = filePathCallback;
-
-                Intent intent = fileChooserParams.createIntent();
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                try {
-                    startActivityForResult(intent, FILE_CHOOSER_REQUEST);
-                    return true;
-                } catch (ActivityNotFoundException e) {
-                    pendingFileCallback = null;
-                    return false;
-                }
-            }
-        });
-
-        webView.setDownloadListener(new DownloadListener() {
-            @Override
-            public void onDownloadStart(
-                    String url,
-                    String userAgent,
-                    String contentDisposition,
-                    String mimeType,
-                    long contentLength) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    startActivity(intent);
-                } catch (ActivityNotFoundException ignored) {
-                    // Ignore downloads when the device has no handler.
-                }
-            }
-        });
-    }
-
-    private void applySystemUi() {
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        );
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode != FILE_CHOOSER_REQUEST || pendingFileCallback == null) {
+        if (resultCode != RESULT_OK || data == null) {
             return;
         }
 
-        Uri[] results = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
-        pendingFileCallback.onReceiveValue(results);
-        pendingFileCallback = null;
+        if (requestCode == OPEN_FILE_REQUEST) {
+            Uri uri = data.getData();
+            if (uri == null) return;
+
+            String name = getDisplayName(uri);
+            String content;
+            try {
+                content = readText(uri);
+            } catch (IOException e) {
+                Toast.makeText(this, "Cannot read file", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String jsName = JSONObject.quote(name);
+            String jsContent = JSONObject.quote(content);
+            webView.evaluateJavascript(
+                    "window.WizardCode.receiveFile(" + jsName + "," + jsContent + ");",
+                    null
+            );
+        } else if (requestCode == SAVE_FILE_REQUEST) {
+            Uri uri = data.getData();
+            if (uri == null) return;
+
+            try (OutputStream output = getContentResolver().openOutputStream(uri)) {
+                if (output == null) throw new IOException("No output stream");
+                output.write(pendingSaveContent.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                webView.evaluateJavascript(
+                        "window.WizardCode.saveResult('Saved " +
+                                JSONObject.quote(pendingSaveName).replace("'", "\\'").substring(1,
+                                        JSONObject.quote(pendingSaveName).length() - 2) +
+                                "');",
+                        null
+                );
+                Toast.makeText(this, "Saved " + pendingSaveName, Toast.LENGTH_SHORT).show();
+            } catch (IOException e) {
+                Toast.makeText(this, "Cannot save file", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+    private String getDisplayName(Uri uri) {
+        Cursor cursor = getContentResolver().query(
+                uri,
+                new String[]{"_display_name"},
+                null,
+                null,
+                null
+        );
+        if (cursor != null) {
+            try {
+                if (cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex("_display_name");
+                    if (index >= 0) return cursor.getString(index);
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        String path = uri.getLastPathSegment();
+        return path == null ? "untitled.txt" : path;
+    }
+
+    private String readText(Uri uri) throws IOException {
+        InputStream input = getContentResolver().openInputStream(uri);
+        if (input == null) throw new IOException("No input stream");
+
+        StringBuilder result = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(input, StandardCharsets.UTF_8))) {
+            char[] buffer = new char[8192];
+            int count;
+            while ((count = reader.read(buffer)) != -1) {
+                result.append(buffer, 0, count);
+                if (result.length() > 8_000_000) {
+                    throw new IOException("File is too large");
+                }
+            }
+        }
+        return result.toString();
+    }
+
+    public final class AndroidBridge {
+
+        @JavascriptInterface
+        public void openFile() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*/*");
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                        "text/*",
+                        "application/json",
+                        "application/javascript",
+                        "application/xml",
+                        "application/x-httpd-php"
+                });
+                try {
+                    startActivityForResult(intent, OPEN_FILE_REQUEST);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(MainActivity.this, "No file picker found", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void saveFile(String name, String content) {
+            pendingSaveName = (name == null || name.trim().isEmpty()) ? "main.js" : name;
+            pendingSaveContent = content == null ? "" : content;
+
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TITLE, pendingSaveName);
+                try {
+                    startActivityForResult(intent, SAVE_FILE_REQUEST);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(MainActivity.this, "No file saver found", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void vibrate() {
+            runOnUiThread(() -> {
+                android.os.Vibrator vibrator =
+                        (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+                if (vibrator != null && android.os.Build.VERSION.SDK_INT >= 26) {
+                    vibrator.vibrate(
+                            android.os.VibrationEffect.createOneShot(
+                                    18,
+                                    android.os.VibrationEffect.DEFAULT_AMPLITUDE
+                            )
+                    );
+                }
+            });
         }
     }
 
@@ -187,6 +256,7 @@ public final class MainActivity extends Activity {
     protected void onDestroy() {
         if (webView != null) {
             webView.stopLoading();
+            webView.removeJavascriptInterface("AndroidBridge");
             webView.destroy();
             webView = null;
         }
