@@ -139,11 +139,9 @@ public final class MainActivity extends Activity {
                 output.write(pendingSaveContent.getBytes(StandardCharsets.UTF_8));
                 output.flush();
 
+                String jsMessage = JSONObject.quote("Saved " + pendingSaveName);
                 webView.evaluateJavascript(
-                        "window.WizardCode.saveResult('Saved " +
-                                JSONObject.quote(pendingSaveName).replace("'", "\\'").substring(1,
-                                        JSONObject.quote(pendingSaveName).length() - 2) +
-                                "');",
+                        "window.WizardCode.saveResult(" + jsMessage + ");",
                         null
                 );
                 Toast.makeText(this, "Saved " + pendingSaveName, Toast.LENGTH_SHORT).show();
