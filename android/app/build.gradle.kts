@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.rafigibran.vscodeandroid"
+    namespace = "com.wizardnative.wizardcode"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.rafigibran.vscodeandroid"
+        applicationId = "com.wizardnative.wizardcode"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -16,8 +16,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            
         }
         release {
             isMinifyEnabled = false
