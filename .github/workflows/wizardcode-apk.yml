@@ -1,0 +1,67 @@
+name: WizardCode APK
+
+on:
+  push:
+    branches:
+      - wizardcode-mobile
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wizardcode-apk
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Prepare WizardCode web UI
+        working-directory: android/ui
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          rm -rf ../app/src/main/assets/www
+          mkdir -p ../app/src/main/assets/www/monaco
+          cp index.html ../app/src/main/assets/www/index.html
+          cp styles.css ../app/src/main/assets/www/styles.css
+          cp app.js ../app/src/main/assets/www/app.js
+          cp -R node_modules/monaco-editor/min/vs ../app/src/main/assets/www/monaco/
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Assemble WizardCode APK
+        working-directory: android
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Publish WizardCode APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/WizardCode.apk
+          ls -lh dist/WizardCode.apk
+
+      - name: Upload WizardCode APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WizardCode-APK
+          path: dist/WizardCode.apk
+          if-no-files-found: error
