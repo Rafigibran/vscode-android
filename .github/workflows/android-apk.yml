@@ -31,6 +31,12 @@ jobs:
       - name: Install Node dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Install build dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix build
+
+      - name: Install web runtime dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix remote/web
+
       - name: Build VS Code web bundle
         env:
           NODE_OPTIONS: --max-old-space-size=8192
